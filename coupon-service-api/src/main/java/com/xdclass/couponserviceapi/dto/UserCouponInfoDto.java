@@ -4,17 +4,19 @@ import java.io.Serializable;
 
 /**
  * @author daniel
- * 用户优惠卷列表返回值
+ * 用户优惠券列表返回值
  */
 public class UserCouponInfoDto extends UserCouponDto implements Serializable {
+
     /**
-     * 优惠卷金额
+     * 优惠金额
      */
-    private  Integer reduceAmount;
+    private Integer reduceAmount;
     /**
-     * 达到金额,如满500减50
+     * 达到金额，如满500减50
      */
-    private  Integer achieveAmount;
+    private Integer achieveAmount;
+
 
     public Integer getReduceAmount() {
         return reduceAmount;
