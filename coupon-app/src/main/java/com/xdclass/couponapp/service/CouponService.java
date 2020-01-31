@@ -16,6 +16,7 @@ import com.xdclass.couponapp.mapper.TCouponMapper;
 import com.xdclass.couponapp.mapper.TUserCouponMapper;
 import com.xdclass.couponapp.util.SnowflakeIdWorker;
 import com.xdclass.couponserviceapi.dto.CouponDto;
+import com.xdclass.couponserviceapi.dto.CouponNoticeDto;
 import com.xdclass.couponserviceapi.dto.UserCouponDto;
 import com.xdclass.couponserviceapi.dto.UserCouponInfoDto;
 import com.xdclass.couponserviceapi.service.ICouponService;
@@ -26,6 +27,9 @@ import org.apache.dubbo.config.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
@@ -46,7 +50,14 @@ public class CouponService implements ICouponService {
     @Reference
     private IUserService iUserService;
 
+    @Resource
+    private RedisTemplate redisTemplate;
+
     private static final Logger logger = LoggerFactory.getLogger(CouponService.class);
+
+    private static final String COUPON = "couponSet";
+
+    private static final int COUPON_NUM = 5;
 
 
     LoadingCache<Integer,List<TCoupon>> couponCache = CacheBuilder.newBuilder()
@@ -90,7 +101,7 @@ public class CouponService implements ICouponService {
             tCoupons= this.loadCoupon(1);
             couponMap1.put(1,tCoupons);
             couponMap = couponMap1;
-            logger.info("update coupon list:{},coupon list size:{}",JSON.toJSONString(tCoupons),tCoupons.size());
+            //logger.info("update coupon list:{},coupon list size:{}",JSON.toJSONString(tCoupons),tCoupons.size());
         }catch (Exception e){
             logger.error("update coupon list:{},coupon list size:{}",JSON.toJSONString(tCoupons),tCoupons.size(),e);
         }
@@ -141,8 +152,7 @@ public class CouponService implements ICouponService {
 
     public List<TCoupon> loadCoupon(Integer o) {
         TCouponExample example = new TCouponExample();
-        example.createCriteria().andStatusEqualTo(Constant.USERFUL)
-                .andStartTimeLessThan(new Date()).andEndTimeGreaterThan(new Date());
+        example.createCriteria().andStatusEqualTo(Constant.USERFUL);
         return tCouponMapper.selectByExample(example);
     }
 
@@ -214,8 +224,6 @@ public class CouponService implements ICouponService {
         }
         return save2DB(dto,coupon);
     }
-
-
 
 
     private String check(UserCouponDto dto){
@@ -300,5 +308,94 @@ public class CouponService implements ICouponService {
         logger.info("invoke get user coupon list,result:{}",JSON.toJSONString(dtos));
         return dtos;
     }
+
+    /**
+     * 查询coupon公告栏couponId,前10条数据
+     */
+    public List<String> queryCouponList(){
+        Set<String> couponSet = redisTemplate.opsForZSet().reverseRange(COUPON,0,-1);
+        //获取set里面前N条数据
+        return couponSet.stream().limit(COUPON_NUM).collect(Collectors.toList());
+    }
+
+
+    /**
+     * 支付成功更新coupon核销为已经核销状态
+     * @param orderId
+     * @param userId
+     */
+    public void payReuslt(int orderId,int userId){
+        TUserCouponExample example = new TUserCouponExample();
+        example.createCriteria().andUserIdEqualTo(userId).andOrderIdEqualTo(orderId);
+        List<TUserCoupon> tUserCoupons = tUserCouponMapper.selectByExample(example);
+        if(CollectionUtils.isEmpty(tUserCoupons)){
+            logger.warn("can't no find userId:{},orderId:{}",userId,orderId);
+            return;
+        }
+        TUserCoupon userCoupon = tUserCoupons.get(0);
+        userCoupon.setStatus(1);
+        tUserCouponMapper.updateByPrimaryKeySelective(userCoupon);
+    }
+
+
+    /**
+     * 用户下单维护coupon和order之间的关系
+     * @param orderId
+     * @param couponCode
+     * @param userId
+     */
+    public void saveOrder(int orderId,String couponCode,int userId){
+        TUserCouponExample example = new TUserCouponExample();
+        example.createCriteria().andUserCouponCodeEqualTo(couponCode).andOrderIdEqualTo(orderId);
+        List<TUserCoupon> tUserCoupons = tUserCouponMapper.selectByExample(example);
+        if(CollectionUtils.isEmpty(tUserCoupons)){
+            logger.warn("can't no find couponCode:{}",couponCode);
+            return;
+        }
+        TUserCoupon userCoupon = tUserCoupons.get(0);
+        userCoupon.setOrderId(orderId);
+        userCoupon.setUserId(userId);
+        //未核销状态
+        userCoupon.setStatus(0);
+        tUserCouponMapper.updateByPrimaryKeySelective(userCoupon);
+    }
+
+    /**
+     * 接收coupon优惠券核销mq的时候被调用,以时间窗口展示前N条数据,userCouponStr代表userId_couponId
+     */
+    public void updateCoupon(String userCouponStr){
+        redisTemplate.opsForZSet().add(COUPON,userCouponStr,System.currentTimeMillis());
+        Set<String> couponSet = redisTemplate.opsForZSet().range(COUPON,0,-1);
+        if(couponSet.size()>COUPON_NUM){
+            String remUserCouponStr = couponSet.stream().findFirst().get();
+            redisTemplate.opsForZSet().remove(COUPON,remUserCouponStr);
+        }
+    }
+
+
+
+    /**
+     * 查询coupon公告栏,前10条数据  userId_couponId  ==>  1_1==> string[]  string[0] =1,string[1] =1
+     */
+    @Override
+    public List<CouponNoticeDto> queryCouponNotice(){
+        Set<String> couponSet = redisTemplate.opsForZSet().reverseRange(COUPON,0,-1);
+        //获取set里面前N条数据
+        List<String> userCouponStrs = couponSet.stream().limit(COUPON_NUM).collect(Collectors.toList());
+        Map<String,String> couponUserMap =userCouponStrs.stream().collect(Collectors.toMap(o -> o.split("_")[1],o -> o.split("_")[0]));
+        List<String> couponIds = userCouponStrs.stream().map(s -> s.split("_")[1]).collect(Collectors.toList());
+        //[1,2] ==>1,2   StringUtils.join
+        String couponIdStrs = StringUtils.join(couponIds,",");
+        //通过couponIdStrs批量获取coupon缓存数据
+        List<TCoupon> tCoupons = getCouponListByIds(couponIdStrs);
+        List<CouponNoticeDto> dtos = tCoupons.stream().map(tCoupon -> {
+            CouponNoticeDto dto = new CouponNoticeDto();
+            BeanUtils.copyProperties(tCoupon,dto);
+            dto.setUserId(Integer.parseInt(couponUserMap.get(dto.getId()+"")));
+            return dto;
+        }).collect(Collectors.toList());
+        return dtos;
+    }
+
 
 }

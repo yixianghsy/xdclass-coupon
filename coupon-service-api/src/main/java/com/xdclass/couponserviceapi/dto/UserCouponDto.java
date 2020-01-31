@@ -3,6 +3,9 @@ package com.xdclass.couponserviceapi.dto;
 
 import java.io.Serializable;
 
+/**
+ * @author daniel
+ */
 public class UserCouponDto implements Serializable {
 
 
@@ -11,6 +14,8 @@ public class UserCouponDto implements Serializable {
     private Integer userId;
 
     private Integer orderId;
+
+    private String userCouponCode;
 
     public Integer getCouponId() {
         return couponId;
@@ -34,5 +39,13 @@ public class UserCouponDto implements Serializable {
 
     public void setOrderId(Integer orderId) {
         this.orderId = orderId;
+    }
+
+    public String getUserCouponCode() {
+        return userCouponCode;
+    }
+
+    public void setUserCouponCode(String userCouponCode) {
+        this.userCouponCode = userCouponCode;
     }
 }

@@ -1,8 +1,8 @@
 server:
-  port: 8089
+  port: 8088
 druid:
   allow:
-    ip: 127.0.0.1
+    ip: 172.16.244.1
   login:
     user_name: root
     password: root
@@ -11,7 +11,7 @@ spring:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://120.24.80.45:3306/shop?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false
     username: root
-    password: root
+    password: daniel
     type: com.alibaba.druid.pool.DruidDataSource
     initial-size: 1
     min-idle: 1
@@ -29,6 +29,9 @@ spring:
     filters: stat,wall
     # 通过connectProperties属性来打开mergeSql功能；慢SQL记录
     connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+  redis:
+    host: 172.16.244.1
+    port: 6379
 dubbo:
   application:
     name: user-coupon
@@ -62,3 +65,12 @@ logging:
   config: classpath:logback-spring.xml
   level:
     root: info
+rocketmq:
+  # 消费者配置
+  consumer:
+    pay:
+      groupName: payResult
+      namesrvAddr: 127.0.0.1:9876
+    order:
+      groupName: saveOrder
+      namesrvAddr: 127.0.0.1:9876

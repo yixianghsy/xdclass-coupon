@@ -14,7 +14,7 @@
 		</commentGenerator>
 
 		<jdbcConnection driverClass="com.mysql.jdbc.Driver"
-						connectionURL="jdbc:mysql://localhost:3306/shop?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false"
+						connectionURL="jdbc:mysql://172.16.244.1:3306/shop?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false"
 						userId="root" password="daniel" />
 
 		<!-- java type resolver -->

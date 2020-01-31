@@ -1,6 +1,7 @@
 package com.xdclass.couponserviceapi.service;
 
 import com.xdclass.couponserviceapi.dto.CouponDto;
+import com.xdclass.couponserviceapi.dto.CouponNoticeDto;
 import com.xdclass.couponserviceapi.dto.UserCouponDto;
 import com.xdclass.couponserviceapi.dto.UserCouponInfoDto;
 
@@ -19,7 +20,10 @@ public interface ICouponService {
 
     public String saveUserCoupon(UserCouponDto dto);
 
-
     public List<UserCouponInfoDto> userCouponList(Integer userId);
 
+    /**
+     * 查询coupon公告栏,前10条数据  userId_couponId  ==>  1_1==> string[]  string[0] =1,string[1] =1
+     */
+    public List<CouponNoticeDto> queryCouponNotice();
 }

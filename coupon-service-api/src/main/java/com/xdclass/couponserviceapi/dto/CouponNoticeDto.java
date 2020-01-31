@@ -1,8 +1,9 @@
-package com.xdclass.couponapp.domain;
+package com.xdclass.couponserviceapi.dto;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class TCoupon {
+public class CouponNoticeDto implements Serializable {
     private Integer id;
 
     private String code;
@@ -19,11 +20,8 @@ public class TCoupon {
 
     private Integer status;
 
-    private Date createTime;
+    private Integer userId;
 
-    private Date startTime;
-
-    private Date endTime;
 
     public Integer getId() {
         return id;
@@ -89,48 +87,27 @@ public class TCoupon {
         this.status = status;
     }
 
-    public Date getCreateTime() {
-        return createTime;
+
+    public Integer getUserId() {
+        return userId;
     }
 
-    public void setCreateTime(Date createTime) {
-        this.createTime = createTime;
-    }
-
-    public Date getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(Date startTime) {
-        this.startTime = startTime;
-    }
-
-    public Date getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(Date endTime) {
-        this.endTime = endTime;
+    public void setUserId(Integer userId) {
+        this.userId = userId;
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(getClass().getSimpleName());
-        sb.append(" [");
-        sb.append("Hash = ").append(hashCode());
-        sb.append(", id=").append(id);
-        sb.append(", code=").append(code);
-        sb.append(", picUrl=").append(picUrl);
-        sb.append(", achieveAmount=").append(achieveAmount);
-        sb.append(", reduceAmount=").append(reduceAmount);
-        sb.append(", stock=").append(stock);
-        sb.append(", title=").append(title);
-        sb.append(", status=").append(status);
-        sb.append(", createTime=").append(createTime);
-        sb.append(", startTime=").append(startTime);
-        sb.append(", endTime=").append(endTime);
-        sb.append("]");
-        return sb.toString();
+        return "CouponNoticeDto{" +
+                "id=" + id +
+                ", code='" + code + '\'' +
+                ", picUrl='" + picUrl + '\'' +
+                ", achieveAmount=" + achieveAmount +
+                ", reduceAmount=" + reduceAmount +
+                ", stock=" + stock +
+                ", title='" + title + '\'' +
+                ", status=" + status +
+                ", userId=" + userId +
+                '}';
     }
 }
