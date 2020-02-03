@@ -141,4 +141,5 @@ public class CouponAppApplicationTests {
         redisTemplate.opsForZSet().remove("mySet","four");
         System.out.println(JSON.toJSONString(redisTemplate.opsForZSet().range("mySet",0,-1)));
     }
+
 }
